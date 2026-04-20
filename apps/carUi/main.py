@@ -1,9 +1,17 @@
-import subprocess
 import tkinter as tk
 from dataclasses import dataclass
 from typing import Callable, Dict, Optional
+from pathlib import Path
+import sys
 
-from weatherPanel import WeatherPanel
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from modules.weather_launcher import launch_weather_dashboard
+from modules.adsb_launcher import launch_adsb_dashboard
+from modules.airband_launcher import launch_airband_am
+from aircraftPanel import AircraftPanel
 
 
 @dataclass(frozen=True)
@@ -20,8 +28,8 @@ class SDRControlPanel(tk.Tk):
     Notes:
     - Starts fullscreen by default for 7-inch displays
     - Main screen stays dark, with a light banner on top
-    - Weather is an in-app subscreen implemented in a separate file
-    - Pressing Weather triggers the registered callback first
+    - Weather launches the external Streamlit dashboard on a remote display
+    - Aircraft opens an in-app submenu for ADS-B and Airband AM
     """
 
     def __init__(
@@ -44,7 +52,7 @@ class SDRControlPanel(tk.Tk):
         self.main_tile_specs = [
             TileSpec("fm_radio", "FM Radio", "📻"),
             TileSpec("ham_radio", "Ham Radio", "📡📻"),
-            TileSpec("aircraft", "Aircraft", "✈"),
+            TileSpec("aircraft", "Aircraft", "🛩️"),
             TileSpec("lighting", "Lighting", "🔆"),
             TileSpec("weather", "Weather", "🌦️"),
             TileSpec("settings", "Settings", "⚙"),
@@ -205,7 +213,7 @@ class SDRControlPanel(tk.Tk):
         self.status_var.set(f"Selected: {spec.label}")
         self._run_callback(spec.key)
 
-    def _on_weather_tile_pressed(self, key: str) -> None:
+    def _on_aircraft_tile_pressed(self, key: str) -> None:
         self.status_var.set(f"Selected: {key}")
         self._run_callback(key)
 
@@ -215,60 +223,21 @@ class SDRControlPanel(tk.Tk):
         self._build_main_tile_grid()
         self.status_var.set("Ready")
 
-    def show_weather_menu(self) -> None:
+    def show_aircraft_menu(self) -> None:
         if self.content_frame is None:
             return
 
-        self.title_label.config(text="Weather")
+        self.title_label.config(text="Aircraft")
         self.left_button.config(text="←")
         self.left_button.pack(side="left", padx=(10, 0), pady=10)
 
         self._clear_content()
-        weather_view = WeatherPanel(
+        aircraft_view = AircraftPanel(
             self.content_frame,
-            on_tile_pressed=self._on_weather_tile_pressed,
+            on_tile_pressed=self._on_aircraft_tile_pressed,
         )
-        weather_view.pack(fill="both", expand=True)
-        self.status_var.set("Weather menu ready")
-
-    def launch_weather_band_radio(self) -> None:
-        try:
-            self.status_var.set("Launching SDR++ on remote display...")
-            command = [
-                "bash",
-                "-lc",
-                (
-                    f'DISPLAY={self.remote_display} '
-                    'sdrpp >/tmp/carsdr-sdrpp-weather.log 2>&1 &'
-                ),
-            ]
-            subprocess.Popen(command)
-            self._tune_sdrpp_to_weather_band()
-            self.status_var.set("Weather band radio launched at 162.550 MHz FM")
-        except Exception as exc:
-            self.status_var.set(f"Weather radio launch failed: {exc}")
-            print(f"[UI] launch_weather_band_radio error: {exc}")
-
-    def launch_forecast(self) -> None:
-        try:
-            self.status_var.set("Launching forecast dashboard on remote display...")
-            command = [
-                "bash",
-                "-lc",
-                (
-                    f'DISPLAY={self.remote_display} '
-                    'xdg-open "https://forecast.weather.gov/MapClick.php?FcstType=graphical" '
-                    '>/tmp/carsdr-forecast.log 2>&1 &'
-                ),
-            ]
-            subprocess.Popen(command)
-            self.status_var.set("Forecast dashboard launched")
-        except Exception as exc:
-            self.status_var.set(f"Forecast launch failed: {exc}")
-            print(f"[UI] launch_forecast error: {exc}")
-
-    def _tune_sdrpp_to_weather_band(self) -> None:
-        print("[UI] Tune SDR++ to 162.550 MHz, mode=FM")
+        aircraft_view.pack(fill="both", expand=True)
+        self.status_var.set("Aircraft menu ready")
 
     def _clear_tile_focus(self, widget: tk.Widget) -> None:
         try:
@@ -283,10 +252,6 @@ class SDRControlPanel(tk.Tk):
         self.status_var.set(f"Fullscreen {mode}")
 
 
-# -----------------------------
-# Example callback functions
-# Replace these with real logic.
-# -----------------------------
 def on_fm_radio(component: str) -> None:
     print(f"Launching {component}: tune to FM mode")
 
@@ -295,8 +260,39 @@ def on_ham_radio(component: str) -> None:
     print(f"Launching {component}: open ham/CB radio controls")
 
 
-def on_aircraft(component: str) -> None:
-    print(f"Launching {component}: load airband preset")
+def make_on_aircraft(app: "SDRControlPanel") -> Callable[[str], None]:
+    def on_aircraft(component: str) -> None:
+        print(f"Launching {component}: aircraft submenu")
+        app.show_aircraft_menu()
+    return on_aircraft
+
+
+def make_on_adsb(app: "SDRControlPanel") -> Callable[[str], None]:
+    def on_adsb(component: str) -> None:
+        try:
+            print(f"Launching {component}: ADS-B dashboard action")
+            launch_adsb_dashboard(
+                remote_display=app.remote_display,
+                set_status=app.status_var.set,
+            )
+        except Exception as exc:
+            app.status_var.set(f"ADS-B launch failed: {exc}")
+            print(f"[UI] ADS-B launch error: {exc}")
+    return on_adsb
+
+
+def make_on_airband_am(app: "SDRControlPanel") -> Callable[[str], None]:
+    def on_airband_am(component: str) -> None:
+        try:
+            print(f"Launching {component}: airband AM action")
+            launch_airband_am(
+                remote_display=app.remote_display,
+                set_status=app.status_var.set,
+            )
+        except Exception as exc:
+            app.status_var.set(f"Airband launch failed: {exc}")
+            print(f"[UI] Airband launch error: {exc}")
+    return on_airband_am
 
 
 def on_lighting(component: str) -> None:
@@ -305,23 +301,16 @@ def on_lighting(component: str) -> None:
 
 def make_on_weather(app: "SDRControlPanel") -> Callable[[str], None]:
     def on_weather(component: str) -> None:
-        print(f"Launching {component}: opening weather submenu")
-        app.show_weather_menu()
+        try:
+            print(f"Launching {component}: weather dashboard action")
+            launch_weather_dashboard(
+                remote_display=app.remote_display,
+                set_status=app.status_var.set,
+            )
+        except Exception as exc:
+            app.status_var.set(f"Weather dashboard launch failed: {exc}")
+            print(f"[UI] Weather launch error: {exc}")
     return on_weather
-
-
-def make_on_weather_band_radio(app: "SDRControlPanel") -> Callable[[str], None]:
-    def on_weather_band_radio(component: str) -> None:
-        print(f"Launching {component}: weather band radio action")
-        app.launch_weather_band_radio()
-    return on_weather_band_radio
-
-
-def make_on_forecast(app: "SDRControlPanel") -> Callable[[str], None]:
-    def on_forecast(component: str) -> None:
-        print(f"Launching {component}: forecast action")
-        app.launch_forecast()
-    return on_forecast
 
 
 def on_settings(component: str) -> None:
@@ -334,11 +323,11 @@ if __name__ == "__main__":
     app.callbacks.update({
         "fm_radio": on_fm_radio,
         "ham_radio": on_ham_radio,
-        "aircraft": on_aircraft,
+        "aircraft": make_on_aircraft(app),
+        "adsb": make_on_adsb(app),
+        "airband_am": make_on_airband_am(app),
         "lighting": on_lighting,
         "weather": make_on_weather(app),
-        "weather_band_radio": make_on_weather_band_radio(app),
-        "forecast": make_on_forecast(app),
         "settings": on_settings,
     })
 
