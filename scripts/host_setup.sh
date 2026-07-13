@@ -10,7 +10,7 @@ DEPTH="${DEPTH:-24}"
 
 RUNTIME_SCRIPT="$PROJECT_DIR/scripts/start_vnc_server.sh"
 SERVICE_DIR="$HOME/.config/systemd/user"
-SERVICE_FILE="$SERVICE_DIR/carsdr-vnc.service"
+SERVICE_FILE="$SERVICE_DIR/carui-vnc.service"
 
 install_if_available() {
   local pkg="$1"
@@ -54,7 +54,8 @@ for pkg in \
   xfce4 xfce4-goodies \
   tigervnc-standalone-server tigervnc-common \
   rtl-sdr \
-  gpsd gpsd-clients python3-gps
+  gpsd gpsd-clients python3-gps \
+  i2c-tools
 do
   install_if_available "$pkg"
 done
@@ -83,9 +84,17 @@ python -m pip install \
   gps \
   gpsd-py3 \
   pyserial \
-  bleak
+  bleak \
+  endev \
+  RPi.GPIO \
+  adafruit-blinka \
+  adafruit-circuitpython-seesaw
 
 deactivate
+
+echo "[*] Granting user permissions..."
+sudo usermod -aG input "$USER"
+
 
 echo "[*] Setting up VNC..."
 
@@ -129,7 +138,7 @@ mkdir -p "$SERVICE_DIR"
 
 cat > "$SERVICE_FILE" <<EOF
 [Unit]
-Description=CarSDR VNC Server
+Description=CarUI VNC Server
 After=network-online.target
 
 [Service]
@@ -146,8 +155,8 @@ echo "[*] Enabling user service startup at boot..."
 sudo loginctl enable-linger "$USER"
 
 systemctl --user daemon-reload
-systemctl --user enable carsdr-vnc.service
-systemctl --user restart carsdr-vnc.service
+systemctl --user enable carui-vnc.service
+systemctl --user restart carui-vnc.service
 
 echo
 echo "[+] Host setup complete."
@@ -160,6 +169,6 @@ echo "[*] Activate Python venv with:"
 echo "    source \"$VENV_DIR/bin/activate\""
 echo
 echo "[*] VNC service commands:"
-echo "    systemctl --user status carsdr-vnc.service"
-echo "    systemctl --user restart carsdr-vnc.service"
-echo "    journalctl --user -u carsdr-vnc.service -f"
+echo "    systemctl --user status carui-vnc.service"
+echo "    systemctl --user restart carui-vnc.service"
+echo "    journalctl --user -u carui-vnc.service -f"
