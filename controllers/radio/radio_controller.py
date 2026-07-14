@@ -1,54 +1,77 @@
-from typing import Optional
+from __future__ import annotations
 
-from modules.radio.radio_types import RadioMode, RadioPreset, RadioRange
+from .radio_backend_if import RadioBackendIf
+from .radio_types import RadioMode, RadioPreset, RadioRange
 
+
+def format_frequency(frequency_hz: int) -> str:
+    """Format a frequency in Hz using a compact human-readable unit."""
+
+    if frequency_hz >= 1_000_000:
+        value = f"{frequency_hz / 1_000_000:.3f}".rstrip("0").rstrip(".")
+        return f"{value} MHz"
+
+    if frequency_hz >= 1_000:
+        value = f"{frequency_hz / 1_000:.3f}".rstrip("0").rstrip(".")
+        return f"{value} kHz"
+
+    return f"{frequency_hz} Hz"
 
 class RadioController:
+
     def __init__(
         self,
-        backend,
+        backend: RadioBackendIf,
         presets: list[RadioPreset],
         default_mode: RadioMode,
-        radio_range: Optional[RadioRange] = None,
+        radio_range: RadioRange | None = None,
     ) -> None:
+        if radio_range is None and not presets:
+            raise ValueError("a radio range or at least one preset is required")
+
         self.backend = backend
-        self.presets = presets
+        self.presets = list(presets)
         self.default_mode = default_mode
         self.radio_range = radio_range
 
         self.current_preset_index = 0
+        self.current_mode = default_mode
         self.current_frequency_hz = (
             radio_range.start_frequency_hz
             if radio_range is not None
-            else presets[0].frequency_hz if presets else 0
+            else self.presets[0].frequency_hz
         )
 
     def start(self) -> int:
         self.backend.start()
-
-        self.backend.set_mode(
-            self.default_mode.name,
-            self.default_mode.bandwidth,
-        )
+        self.set_mode(self.default_mode)
 
         if self.radio_range is not None:
             self.current_frequency_hz = self.radio_range.start_frequency_hz
 
-        self.backend.set_frequency(self.current_frequency_hz)
-
-        return self.current_frequency_hz
+        return self.set_frequency(self.current_frequency_hz)
 
     def stop(self) -> None:
         self.backend.stop()
 
-    def tune_preset(self, preset: RadioPreset) -> RadioPreset:
-        self.backend.set_mode(
-            preset.mode.name,
-            preset.mode.bandwidth,
-        )
-        self.backend.set_frequency(preset.frequency_hz)
+    def get_frequency(self) -> int:
+        """Return the controller's current frequency without transport I/O."""
+        return self.current_frequency_hz
 
-        self.current_frequency_hz = preset.frequency_hz
+    def refresh_frequency(self) -> int:
+        """Read the current frequency from the backend and synchronize state."""
+        frequency_hz = self._wrap_frequency(self.backend.get_frequency())
+        self.current_frequency_hz = frequency_hz
+        return frequency_hz
+
+    def set_mode(self, mode: RadioMode) -> RadioMode:
+        self.backend.set_mode(mode.name, mode.bandwidth)
+        self.current_mode = mode
+        return mode
+
+    def tune_preset(self, preset: RadioPreset) -> RadioPreset:
+        self.set_mode(preset.mode)
+        self.set_frequency(preset.frequency_hz)
 
         try:
             self.current_preset_index = self.presets.index(preset)
@@ -71,19 +94,45 @@ class RadioController:
     def previous_preset(self) -> RadioPreset:
         return self.tune_preset_index(self.current_preset_index - 1)
 
-    def frequency_up(self, delta_hz: Optional[int] = None) -> int:
-        step = delta_hz or self.default_mode.step_hz
+    def next_station(self) -> RadioPreset:
+        """Compatibility alias used by existing radio panels and adapters."""
+        return self.next_preset()
+
+    def previous_station(self) -> RadioPreset:
+        """Compatibility alias used by existing radio panels and adapters."""
+        return self.previous_preset()
+
+    def frequency_up(self, delta_hz: int | None = None) -> int:
+        step = self._validated_step(delta_hz)
         return self.set_frequency(self.current_frequency_hz + step)
 
-    def frequency_down(self, delta_hz: Optional[int] = None) -> int:
-        step = delta_hz or self.default_mode.step_hz
+    def frequency_down(self, delta_hz: int | None = None) -> int:
+        step = self._validated_step(delta_hz)
         return self.set_frequency(self.current_frequency_hz - step)
 
     def set_frequency(self, frequency_hz: int) -> int:
-        frequency_hz = self._wrap_frequency(frequency_hz)
-        self.backend.set_frequency(frequency_hz)
-        self.current_frequency_hz = frequency_hz
-        return frequency_hz
+        if frequency_hz <= 0:
+            raise ValueError("frequency_hz must be greater than zero")
+
+        wrapped_frequency_hz = self._wrap_frequency(frequency_hz)
+        self.backend.set_frequency(wrapped_frequency_hz)
+        self.current_frequency_hz = wrapped_frequency_hz
+        return wrapped_frequency_hz
+
+    def get_signal_strength(self) -> float | str | None:
+        return self.backend.get_signal_strength()
+
+    def get_snr(self) -> float | str | None:
+        return self.backend.get_snr()
+
+    def get_rds(self) -> str | None:
+        return self.backend.get_rds()
+
+    def _validated_step(self, delta_hz: int | None) -> int:
+        step = self.current_mode.step_hz if delta_hz is None else delta_hz
+        if step <= 0:
+            raise ValueError("frequency step must be greater than zero")
+        return step
 
     def _wrap_frequency(self, frequency_hz: int) -> int:
         if self.radio_range is None:
@@ -96,10 +145,3 @@ class RadioController:
             return self.radio_range.max_frequency_hz
 
         return frequency_hz
-
-    def next_station(self) -> int:
-        return self._seek(direction=1)
-
-    def previous_station(self) -> int:
-        return self._seek(direction=-1)
-

@@ -10,7 +10,7 @@ from apps.launchers.process_manager import (
     kill_process_pattern,
 )
 
-from modules.logging.logging_paths import app_logging_file
+from common.logging.logging_paths import logging_file_path
 
 
 class StreamlitLauncher(AppLauncherIf):
@@ -26,7 +26,7 @@ class StreamlitLauncher(AppLauncherIf):
 
         self.log_file = (
             log_file
-            or app_logging_file(
+            or logging_file_path(
                 "carsdr",
                 "carsdr-streamlit.log",
             )

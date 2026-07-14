@@ -24,7 +24,7 @@ DEFAULT_LON = -83.0330
 DEFAULT_LOCATION_NAME = "Fallback Location"
 
 st.set_page_config(
-    page_title="CarSDR Weather",
+    page_title="Drive UbiquitOS Weather",
     page_icon="🌦️",
     layout="wide",
     initial_sidebar_state="collapsed",
@@ -261,7 +261,7 @@ try:
     st.markdown(
         f"""
         <div class="weather-hero">
-            <div class="weather-title">CarSDR Weather</div>
+            <div class="weather-title">Drive UbiquitOS Weather</div>
             <div class="weather-subtitle">
                 📍 {pretty_location} · {lat:.5f}, {lon:.5f} · {loc["source"]} · Updated {now_str}
             </div>

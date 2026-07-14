@@ -1,61 +1,132 @@
-import tkinter as tk
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Optional
 
 from apps.carUi.panels.panel_manager_if import PanelManagerIf
+from apps.carUi.panels.scanner_radio_panel import ScannerBandTileSpec, ScannerRadioPanel
+from apps.carUi.radio.radio_panel import RadioPanel
+from apps.carUi.radio.radio_panel_config import RadioPanelConfig, RadioPanelTileConfig
+from apps.carUi.radio.radio_panel_factory import create_radio_panel_binding
+from apps.carUi.radio.radio_session_controller import RadioSessionController
 
 
-class SettingsPanelManager(PanelManagerIf):
+@dataclass(frozen=True)
+class ScannerBandSpec:
+    key: str
+    icon: str
+    title: str
+    subtitle: str
+    detail: str
+    controller_attr: str
+    launcher_attr: str
+    config_attr: str
+
+
+class ScannerPanelManager(PanelManagerIf):
+    def __init__(self, app) -> None:
+        super().__init__(app)
+        self.active_radio_panel: Optional[RadioPanel] = None
+        self.active_radio_session: Optional[RadioSessionController] = None
+        self.bands = (
+            ScannerBandSpec("police_fire", "PF", "POLICE / FIRE", "Public safety", "Local / regional monitoring", "police_fire_controller", "police_fire_launcher", "police_fire_config"),
+            ScannerBandSpec("railroad", "RR", "RAILROAD", "Rail channels", "AAR road / dispatch", "railroad_controller", "railroad_launcher", "railroad_config"),
+            ScannerBandSpec("ham_2m", "2M", "HAM 2m", "144–148 MHz", "Amateur VHF", "ham_2m_controller", "ham_2m_launcher", "ham_2m_config"),
+            ScannerBandSpec("ham_70cm", "70", "HAM 70cm", "420–450 MHz", "Amateur UHF", "ham_70cm_controller", "ham_70cm_launcher", "ham_70cm_config"),
+            ScannerBandSpec("gmrs", "GM", "GMRS", "462 / 467 MHz", "Repeaters / simplex", "gmrs_controller", "gmrs_launcher", "gmrs_config"),
+            ScannerBandSpec("frs", "FR", "FRS", "462 / 467 MHz", "Family radios", "frs_controller", "frs_launcher", "frs_config"),
+            ScannerBandSpec("marine", "⚓", "MARINE", "156 MHz", "VHF marine band", "marine_controller", "marine_launcher", "marine_config"),
+            ScannerBandSpec("cb", "CB", "CB", "27 MHz AM", "Citizens Band", "cb_controller", "cb_launcher", "cb_config"),
+        )
+
     def show(self) -> None:
-        if not self.prepare_panel("Settings"):
+        if not self.prepare_panel("Scanner"):
             return
 
-        grid = tk.Frame(self.content_frame, bg=self.app["app_bg"] if False else "#111418")
-        grid.pack(fill="both", expand=True)
+        self.app.top_bar.set_back_command(lambda: self.app.show_menu("radio"))
+        self.active_radio_panel = None
+        self.active_radio_session = None
 
-        for col in range(3):
-            grid.columnconfigure(col, weight=1, uniform="settings_col")
-        for row in range(2):
-            grid.rowconfigure(row, weight=1, uniform="settings_row")
+        panel = ScannerRadioPanel(
+            parent=self.content_frame,
+            bands=[
+                ScannerBandTileSpec(
+                    key=band.key,
+                    icon=band.icon,
+                    label=band.title,
+                    subtitle=band.subtitle,
+                    detail=band.detail,
+                )
+                for band in self.bands
+            ],
+            on_band_pressed=self.show_band_by_key,
+            create_tile=self.create_tile,
+            compact_ui=bool(getattr(self.app, "compact_ui", False)),
+        )
+        panel.pack(fill="both", expand=True)
+        self.set_status("Scanner ready")
 
-        tiles = [
-            ("audio_aux", "AUX", "Audio output", "Use analog/aux output", self.select_aux),
-            ("audio_hdmi", "HDMI", "Audio output", "Use HDMI audio", self.select_hdmi),
-            ("audio_bt", "Bluetooth", "Audio output", "Choose paired device", self.show_bluetooth_devices),
-            ("gps_hw", "Hardware GPS", "GPS source", "Use ttyACM0 / gpsd", self.select_hardware_gps),
-            ("gps_sim", "Sim GPS", "GPS source", "Use simulated route", self.select_sim_gps),
-            ("wifi", "Wi-Fi", "Network", "Choose Wi-Fi source", self.show_wifi_networks),
-        ]
+    def show_band_by_key(self, key: str) -> None:
+        band = self._find_band(key)
+        if band is None:
+            self.set_status(f"Unknown scanner band: {key}")
+            return
+        self.show_band(band)
 
-        for index, (key, label, subtitle, detail, callback) in enumerate(tiles):
-            row = index // 3
-            col = index % 3
+    def show_band(self, band: ScannerBandSpec) -> None:
+        try:
+            radio_controller = getattr(self.app, band.controller_attr)
+            radio_launcher = getattr(self.app, band.launcher_attr)
+            radio_config = getattr(self.app, band.config_attr)
+        except AttributeError as exc:
+            self.set_status(f"{band.title} is not wired yet: {exc}")
+            return
 
-            tile = self.create_tile(grid, key, label, subtitle, detail)
-            tile.grid(row=row, column=col, sticky="nsew", padx=6, pady=6)
-            self._bind_click_recursive(tile, callback)
+        self._clear_content()
+        self.app.top_bar.set_back_command(self.show)
+        self.app.top_bar.show_back_button()
 
-        self.set_status("Settings ready")
+        panel_config = RadioPanelConfig(
+            key=band.key,
+            title=band.title,
+            launch_tile=RadioPanelTileConfig(
+                label="Launch SDR++",
+                subtitle=f"{band.title} receiver",
+                detail="Starts / toggles SDR++",
+            ),
+            radio_toggle_tile=RadioPanelTileConfig(
+                label="Radio ON/OFF",
+                subtitle="Radio control",
+                detail="Start / stop receiver",
+            ),
+            default_step_hz=radio_config.default_mode.step_hz,
+            default_mode_name=radio_config.default_mode.name,
+            preset_columns=2,
+        )
 
-    def _bind_click_recursive(self, widget, callback) -> None:
-        widget.bind("<Button-1>", lambda event: callback())
-        for child in widget.winfo_children():
-            self._bind_click_recursive(child, callback)
+        binding = create_radio_panel_binding(
+            parent=self.content_frame,
+            radio_controller=radio_controller,
+            radio_app_launcher=radio_launcher,
+            panel_config=panel_config,
+            remote_display=self.remote_display,
+            set_status=self.set_status,
+            on_frequency_changed=self.app.set_current_frequency,
+        )
 
-    def select_aux(self) -> None:
-        self.set_status("Audio output: AUX selected")
+        self.active_radio_session = binding.session
+        self.active_radio_panel = binding.panel
+        self.active_radio_panel.pack(fill="both", expand=True)
+        self.active_radio_panel.start()
+        self.active_radio_session.report_ready()
+        self.app.set_panel_title(band.title)
 
-    def select_hdmi(self) -> None:
-        self.set_status("Audio output: HDMI selected")
+    def _find_band(self, key: str) -> ScannerBandSpec | None:
+        for band in self.bands:
+            if band.key == key:
+                return band
+        return None
 
-    def show_bluetooth_devices(self) -> None:
-        self.set_status("Bluetooth device picker coming next")
-
-    def select_hardware_gps(self) -> None:
-        self.app.gps_source = "hardware"
-        self.set_status("GPS source: hardware")
-
-    def select_sim_gps(self) -> None:
-        self.app.gps_source = "sim"
-        self.set_status("GPS source: simulator")
-
-    def show_wifi_networks(self) -> None:
-        self.set_status("Wi-Fi picker coming next")
+    def _clear_content(self) -> None:
+        for child in self.content_frame.winfo_children():
+            child.destroy()

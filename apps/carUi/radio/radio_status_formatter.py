@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from modules.radio.radio_types import RadioPreset
+from controllers.radio.radio_types import RadioPreset
 
 
-def format_frequency(frequency_hz: int, precision: int = 1,) -> str:
+def format_frequency(frequency_hz: int, precision: int = 1) -> str:
     if frequency_hz >= 1_000_000:
         value = frequency_hz / 1_000_000
         return f"{value:.{precision}f} MHz"

@@ -49,7 +49,7 @@ HAM_RADIO_PROFILE = SDRPPProfile(
     start_frequency_hz=450_000_000,
 )
 
-from modules.logging.logging_paths import app_logging_file
+from common.logging.logging_paths import logging_file_path
 
 class SDRPPLauncher(AppLauncherIf):
     def __init__(
@@ -66,7 +66,7 @@ class SDRPPLauncher(AppLauncherIf):
         self.profile = profile
         self.log_file = (
             log_file
-            or app_logging_file(
+            or logging_file_path(
                 "carsdr",
                 "carsdr-sdrpp.log",
             )

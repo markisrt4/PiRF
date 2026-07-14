@@ -1,11 +1,11 @@
-from abc import ABC, abstractmethod
+from __future__ import annotations
+
+from typing import Protocol
 
 
-class RadioInputAdapterIf(ABC):
-    @abstractmethod
-    def connect(self) -> None:
-        pass
+class RadioInputAdapterIf(Protocol):
+    """Lifecycle contract for devices that map input into radio operations."""
 
-    @abstractmethod
-    def disconnect(self) -> None:
-        pass
+    def connect(self) -> None: ...
+
+    def disconnect(self) -> None: ...

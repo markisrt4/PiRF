@@ -1,9 +1,10 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-exec streamlit run weather_dash.py \
+exec streamlit run main.py \
   --server.address 0.0.0.0 \
   --server.port 8501
+  

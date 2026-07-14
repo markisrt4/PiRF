@@ -9,7 +9,7 @@ from apps.launchers.process_manager import (
     is_process_running,
 )
 
-from modules.logging.logging_paths import app_logging_file
+from common.logging.logging_paths import logging_file_path
 
 class ADSBLauncher(AppLauncherIf):
     def __init__(
@@ -24,7 +24,7 @@ class ADSBLauncher(AppLauncherIf):
         self.url = url
         self.readsb_log = self.log_file = (
             readsb_log
-            or app_logging_file(
+            or logging_file_path(
                 "carsdr",
                 "carsdr-readsb.log",
             )

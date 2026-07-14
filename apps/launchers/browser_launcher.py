@@ -10,7 +10,7 @@ from apps.launchers.process_manager import (
     kill_process_pattern,
 )
 
-from modules.logging.logging_paths import app_logging_file
+from common.logging.logging_paths import logging_file_path
 
 class BrowserKioskLauncher(AppLauncherIf):
     def __init__(
@@ -23,7 +23,7 @@ class BrowserKioskLauncher(AppLauncherIf):
         self.process_pattern = process_pattern
         self.log_file = (
             log_file
-            or app_logging_file(
+            or logging_file_path(
                 "carsdr",
                 "carsdr-browser.log",
             )

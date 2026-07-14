@@ -9,7 +9,7 @@ class GqrxCtrl():
         self.ip = gqrxHostIp
         self.port = 7356
         self.bufSize = 1024
-	self.debugOn = debugOn
+        self.debugOn = debugOn
 
         # Establish TCP connection to GQRX
         self.qgrxClient = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -17,15 +17,15 @@ class GqrxCtrl():
 
     def gqrxTuneFreq(self, freq):
         message = "F " + str(freq)
-	if self.debugOn == True:
-		print (message)
+        if self.debugOn == True:
+            print (message)
         #self.qgrxClient.send(message)
 
     def gqrxSetDemodMode(self, DemodMode):
         message = "M " + DemodMode
-	if self.debugOn == True:
-		print (message)
-        #self.qgrxClient.send(message)
+        if self.debugOn == True:
+            print (message)
+            #self.qgrxClient.send(message)
 
     def gqrxClose(self):
         self.gqrxClient.close()

@@ -3,38 +3,38 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from apps.carUi.config.radio_manifest_parser import RadioManifestParser
-from apps.carUi.radio_runtime_assembly import assemble_radio_runtime
+from apps.carUi.runtime.radio_runtime_factory import create_car_ui_runtime
 from apps.carUi.uiControlPanel import UiControlPanel
-from modules.gps.gps_device import GPSDevice
-from modules.lighting.leddmx.bluetooth_controller import LedDmxBluetoothController
+from hardware_io.gps.gps_reader import GpsReader
+from controllers.lighting.leddmx_bluetooth_controller import LedDmxBluetoothController
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+RUNTIME_CONFIG_PATH = (
+    PROJECT_ROOT / "apps" / "carUi" / "config" / "car_ui_runtime.toml"
+)
 
 
 def main() -> None:
-    gps_device = GPSDevice()
+    runtime = create_car_ui_runtime(
+        RUNTIME_CONFIG_PATH,
+        project_root=PROJECT_ROOT,
+    )
+
+    gps_device = GpsReader()
     gps_device.start()
 
-    app = UiControlPanel(remote_display=":2")
-    app.gps_device = gps_device
-    app.start_gps_ui_updates()
-
-    # Optional. Leave unset to scan for the LEDDMX BLE service UUID.
-    # Set this only if you know the controller exposes a stable BLE address.
-    lighting_address = os.getenv("CARUI_LIGHTING_ADDRESS")
-    app.lighting_controller = LedDmxBluetoothController(
-        address=lighting_address,
+    lighting_controller = LedDmxBluetoothController(
+        address=os.getenv("CARUI_LIGHTING_ADDRESS"),
     )
 
-    radio_manifest_parser = RadioManifestParser(
-        Path("apps/carUi/config/radio_manifest.json")
+    app = UiControlPanel(
+        runtime=runtime,
+        gps_device=gps_device,
+        lighting_controller=lighting_controller,
     )
-
-    assemble_radio_runtime(
-        app,
-        radio_manifest_parser=radio_manifest_parser,
-    )
-
     app.register_default_callbacks()
+    app.start_gps_ui_updates()
     app.mainloop()
 
 
