@@ -28,7 +28,7 @@ chmod +x "$WRAPPER_SCRIPT"
 
 cat > "$SERVICE_FILE" <<EOF
 [Unit]
-Description=Start gpsd for Drive_ubiquitOS
+Description=Start gpsd for OpenRoadCode
 After=network.target
 
 [Service]

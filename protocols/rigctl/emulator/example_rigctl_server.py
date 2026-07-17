@@ -20,7 +20,7 @@ class RigState:
     running: bool = False
     signal_strength_db: float = -73.0
     snr_db: float = 18.5
-    rds_text: str = "Drive UbiquitOS Example Station"
+    rds_text: str = "OpenRoadCode Example Station"
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
 

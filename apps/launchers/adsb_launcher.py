@@ -42,7 +42,7 @@ class ADSBLauncher(AppLauncherIf):
             log_file=(
                 browser_log_file
                 or logging_file_path(
-                    "drive-ubiquitos",
+                    "openroadcode",
                     "adsb-browser.log",
                 )
             ),

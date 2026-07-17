@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import tkinter as tk
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from apps.carUi.system.volume_indicator import VolumeIndicator, VolumeIndicatorStyle
+
+
+LOGO_PATH = Path(__file__).resolve().parents[1] / "assets" / "openroadcode.png"
 
 
 class TopBarPanel(tk.Frame):
@@ -135,6 +139,27 @@ class TopBarPanel(tk.Frame):
             padx=(self._layout["zero"], self._style["back_button_gap"]),
         )
         self.back_button.pack_forget()
+
+        self._logo_image: tk.PhotoImage | None = None
+        try:
+            self._logo_image = tk.PhotoImage(file=LOGO_PATH)
+        except tk.TclError as exc:
+            print(f"[UI] Unable to load header logo: {exc}")
+
+        if self._logo_image is not None:
+            self.logo_label = tk.Label(
+                left_group,
+                image=self._logo_image,
+                bg=self._colors["background"],
+                bd=self._layout["zero"],
+            )
+            self.logo_label.pack(
+                side=self._layout["left_side"],
+                padx=(
+                    self._layout["zero"],
+                    self._style["logo_gap"],
+                ),
+            )
 
         self.title_label = tk.Label(
             left_group,

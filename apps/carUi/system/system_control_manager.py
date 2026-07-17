@@ -20,7 +20,7 @@ class SystemControlManager:
         self._request_close = request_close
 
     def power_off(self) -> None:
-        self._set_status("Shutting down Drive UbiquitOS apps...")
+        self._set_status("Shutting down OpenRoadCode apps...")
 
         try:
             self._system_controller.close_display_apps()

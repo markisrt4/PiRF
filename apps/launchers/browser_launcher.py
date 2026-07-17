@@ -37,7 +37,7 @@ class BrowserKioskLauncher(AppLauncherIf):
         self.log_file = Path(
             log_file
             or logging_file_path(
-                "drive-ubiquitos",
+                "openroadcode",
                 "browser.log",
             )
         )

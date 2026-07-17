@@ -221,7 +221,7 @@ TOP_BAR_THEME = {
     "profiles": {
         "compact": {
             "height": 50,
-            "default_title": "Drive UbiquitOS",
+            "default_title": "OpenRoadCode",
             "group_pady": 6,
             "left_padx": 8,
             "right_padx": 10,
@@ -229,6 +229,7 @@ TOP_BAR_THEME = {
             "back_padx": 10,
             "back_pady": 4,
             "back_button_gap": 8,
+            "logo_gap": 6,
             "title_font": (FONT_FAMILY, 16, "bold"),
             "frequency_font": (FONT_FAMILY, 13, "bold"),
             "location_font": (FONT_FAMILY, 9),
@@ -250,7 +251,7 @@ TOP_BAR_THEME = {
         },
         "normal": {
             "height": 68,
-            "default_title": "Drive UbiquitOS Control Panel",
+            "default_title": "OpenRoadCode Control Panel",
             "group_pady": 8,
             "left_padx": 8,
             "right_padx": 16,
@@ -258,6 +259,7 @@ TOP_BAR_THEME = {
             "back_padx": 16,
             "back_pady": 6,
             "back_button_gap": 12,
+            "logo_gap": 8,
             "title_font": FONTS["title"],
             "frequency_font": (FONT_FAMILY, 18, "bold"),
             "location_font": FONTS["status"],

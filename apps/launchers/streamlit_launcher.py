@@ -34,7 +34,7 @@ class StreamlitLauncher(AppLauncherIf):
         self.log_file = Path(
             log_file
             or logging_file_path(
-                "drive-ubiquitos",
+                "openroadcode",
                 "streamlit.log",
             )
         )
@@ -45,7 +45,7 @@ class StreamlitLauncher(AppLauncherIf):
             log_file=(
                 browser_log_file
                 or logging_file_path(
-                    "drive-ubiquitos",
+                    "openroadcode",
                     "streamlit-browser.log",
                 )
             ),

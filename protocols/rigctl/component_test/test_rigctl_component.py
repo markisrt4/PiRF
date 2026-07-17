@@ -55,7 +55,7 @@ class RigctlClientComponentTest(unittest.TestCase):
         self.assertEqual("-73.0", self.client.get_signal_strength())
         self.assertEqual("18.5", self.client.get_snr())
         self.assertEqual(
-            "Drive UbiquitOS Example Station",
+            "OpenRoadCode Example Station",
             self.client.get_rds(),
         )
 

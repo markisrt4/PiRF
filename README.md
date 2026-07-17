@@ -1,4 +1,4 @@
-#  Mark's Bespoke Car Controller (Drive UbiquitOS)
+# OpenRoadCode
 
 > A Raspberry Pi powered automotive software-defined radio, vehicle information center, and embedded experimentation platform.
 
@@ -6,7 +6,7 @@
 
 Modern vehicles contain dozens of computers, yet very few are open to customization.
 
-Drive UbiquitOS embraces the opposite philosophy.
+OpenRoadCode embraces the opposite philosophy.
 
 The project is designed to be:
 
@@ -17,7 +17,7 @@ The project is designed to be:
 - Educational
 - Developer friendly
 
-Rather than replacing factory vehicle systems, Drive UbiquitOS complements them by providing a platform for experimentation, visualization, software-defined radio, and custom applications.
+Rather than replacing factory vehicle systems, OpenRoadCode complements them by providing a platform for experimentation, visualization, software-defined radio, and custom applications.
 CarSDR is a custom in-vehicle infotainment and software-defined radio platform designed around a Raspberry Pi 4, RTL-SDR, GPS receiver, rotary encoder controls, and a touchscreen display.
 
 The project combines multiple technologies into a single dashboard capable of monitoring radio communications, displaying vehicle information, controlling vehicle lighting, interacting with Bluetooth devices, and serving as a flexible embedded Linux development platform.

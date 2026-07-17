@@ -26,11 +26,11 @@ class WeatherDashLauncher(StreamlitLauncher):
             app_path=root / "apps" / "weatherDash" / "main.py",
             port=port,
             log_file=logging_file_path(
-                "drive-ubiquitos",
+                "openroadcode",
                 "weather-dashboard.log",
             ),
             browser_log_file=logging_file_path(
-                "drive-ubiquitos",
+                "openroadcode",
                 "weather-dashboard-browser.log",
             ),
         )

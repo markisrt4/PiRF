@@ -250,7 +250,7 @@ class UiControlPanel(tk.Tk):
     def _menu_pages() -> dict[str, MenuPage]:
         return {
             "main": MenuPage(
-                title="Drive UbiquitOS",
+                title="OpenRoadCode",
                 tiles=(
                     MenuTile("radio", "RADIO", "FM / Scanner / NOAA", "Broadcast and monitoring"),
                     MenuTile("aircraft", "AIRCRAFT", "ADS-B + Airband", "Traffic and chatter"),
@@ -339,9 +339,9 @@ class UiControlPanel(tk.Tk):
 
     def show_main_menu(self) -> None:
         title_text = (
-            "Drive UbiquitOS"
+            "OpenRoadCode"
             if self.compact_ui
-            else "Drive UbiquitOS Control Panel"
+            else "OpenRoadCode Control Panel"
         )
         self.navigation.show_root(
             title=title_text,
@@ -356,7 +356,7 @@ class UiControlPanel(tk.Tk):
             "media": "Media",
             "gauges": "Gauges",
         }
-        title = titles.get(menu_key, "Drive UbiquitOS")
+        title = titles.get(menu_key, "OpenRoadCode")
         self.navigation.show_screen(
             title=title,
             builder=lambda: self._show_menu_page(menu_key),
