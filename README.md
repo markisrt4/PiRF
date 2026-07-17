@@ -256,6 +256,8 @@ source venv/bin/activate
 Run the UI:
 
 ```bash
+CARUI_GEOMETRY=1024x600 \
+CARUI_FULLSCREEN=0 \
 python3 -m apps.carUi.main
 ```
 
