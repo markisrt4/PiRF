@@ -29,6 +29,42 @@ class RigctlConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class SeesawEncoderConfig:
+    address: int
+    reverse_direction: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class GpioEncoderConfig:
+    pin_a: int
+    pin_b: int
+    button: int | None = None
+    reverse_direction: bool = False
+
+
+EncoderDeviceConfig = SeesawEncoderConfig | GpioEncoderConfig
+
+
+@dataclass(frozen=True, slots=True)
+class RotaryEncoderConfig:
+    devices: tuple[EncoderDeviceConfig, ...] = (
+        SeesawEncoderConfig(address=0x36),
+        SeesawEncoderConfig(address=0x37),
+        SeesawEncoderConfig(address=0x38),
+    )
+    volume_index: int = 0
+
+    @property
+    def panel_count(self) -> int:
+        return len(self.devices) - 1
+
+
+@dataclass(frozen=True, slots=True)
+class InputConfig:
+    rotary_encoders: RotaryEncoderConfig
+
+
+@dataclass(frozen=True, slots=True)
 class RadioStackConfig:
     key: str
     config_path: Path
@@ -59,6 +95,7 @@ class AuxiliaryConfig:
 class CarUiRuntimeConfig:
     runtime: RuntimeDisplayConfig
     rigctl: RigctlConfig
+    input: InputConfig
     radios: tuple[RadioStackConfig, ...]
     auxiliary: AuxiliaryConfig
 
@@ -112,12 +149,14 @@ class CarUiRuntimeConfigParser:
 
         runtime = self._parse_runtime(data.get("runtime", {}))
         rigctl = self._parse_rigctl(data.get("rigctl", {}))
+        input_config = self._parse_input(data.get("input", {}))
         radios = self._parse_radios(data.get("radios", []))
         auxiliary = self._parse_auxiliary(data.get("auxiliary", {}))
 
         return CarUiRuntimeConfig(
             runtime=runtime,
             rigctl=rigctl,
+            input=input_config,
             radios=radios,
             auxiliary=auxiliary,
         )
@@ -150,6 +189,134 @@ class CarUiRuntimeConfigParser:
             )
 
         return RigctlConfig(host=host, port=port)
+
+    def _parse_input(self, data: Any) -> InputConfig:
+        section = self._expect_table(data, "input")
+        encoder_data = self._expect_table(
+            section.get("rotary_encoders", {}),
+            "input.rotary_encoders",
+        )
+
+        devices_data = encoder_data.get("devices")
+        devices = (
+            self._default_encoder_devices()
+            if devices_data is None
+            else self._parse_encoder_devices(devices_data)
+        )
+        volume_index = encoder_data.get("volume_index", 0)
+        if (
+            not isinstance(volume_index, int)
+            or isinstance(volume_index, bool)
+            or not 0 <= volume_index < len(devices)
+        ):
+            raise CarUiRuntimeConfigError(
+                "input.rotary_encoders.volume_index must identify a "
+                "configured encoder"
+            )
+
+        return InputConfig(
+            rotary_encoders=RotaryEncoderConfig(
+                devices=devices,
+                volume_index=volume_index,
+            )
+        )
+
+    def _parse_encoder_devices(
+        self,
+        data: Any,
+    ) -> tuple[EncoderDeviceConfig, ...]:
+        if not isinstance(data, list) or not data:
+            raise CarUiRuntimeConfigError(
+                "input.rotary_encoders.devices must be a non-empty "
+                "array of tables"
+            )
+
+        devices: list[EncoderDeviceConfig] = []
+        seesaw_addresses: set[int] = set()
+        gpio_pins: set[int] = set()
+
+        for index, item in enumerate(data):
+            section_name = f"input.rotary_encoders.devices[{index}]"
+            section = self._expect_table(item, section_name)
+            driver = self._required_string(section, "driver", section_name)
+            reverse_direction = self._optional_bool(
+                section,
+                "reverse_direction",
+                default=False,
+                section_name=section_name,
+            )
+
+            if driver == "seesaw":
+                address = self._i2c_address(
+                    section.get("address"),
+                    f"{section_name}.address",
+                )
+                if address in seesaw_addresses:
+                    raise CarUiRuntimeConfigError(
+                        "Seesaw encoder addresses must be unique"
+                    )
+                seesaw_addresses.add(address)
+                devices.append(
+                    SeesawEncoderConfig(
+                        address=address,
+                        reverse_direction=reverse_direction,
+                    )
+                )
+                continue
+
+            if driver == "gpio":
+                pin_a = self._physical_pin(
+                    section.get("pin_a"),
+                    f"{section_name}.pin_a",
+                )
+                pin_b = self._physical_pin(
+                    section.get("pin_b"),
+                    f"{section_name}.pin_b",
+                )
+                button_value = section.get("button")
+                button = (
+                    None
+                    if button_value is None
+                    else self._physical_pin(
+                        button_value,
+                        f"{section_name}.button",
+                    )
+                )
+                pins = (pin_a, pin_b) + (
+                    (button,) if button is not None else ()
+                )
+                if len(pins) != len(set(pins)):
+                    raise CarUiRuntimeConfigError(
+                        f"{section_name} pins must be unique"
+                    )
+                if gpio_pins.intersection(pins):
+                    raise CarUiRuntimeConfigError(
+                        "GPIO encoder pins cannot be shared"
+                    )
+                gpio_pins.update(pins)
+                devices.append(
+                    GpioEncoderConfig(
+                        pin_a=pin_a,
+                        pin_b=pin_b,
+                        button=button,
+                        reverse_direction=reverse_direction,
+                    )
+                )
+                continue
+
+            raise CarUiRuntimeConfigError(
+                f"{section_name}.driver must be 'seesaw' or 'gpio'"
+            )
+
+        return tuple(devices)
+
+    @staticmethod
+    def _default_encoder_devices() -> tuple[EncoderDeviceConfig, ...]:
+        return (
+            SeesawEncoderConfig(address=0x36),
+            SeesawEncoderConfig(address=0x37),
+            SeesawEncoderConfig(address=0x38),
+        )
 
     def _parse_radios(self, data: Any) -> tuple[RadioStackConfig, ...]:
         if not isinstance(data, list):
@@ -335,6 +502,30 @@ class CarUiRuntimeConfigParser:
         if not isinstance(value, bool):
             raise CarUiRuntimeConfigError(
                 f"{section_name}.{key} must be a boolean"
+            )
+        return value
+
+    @staticmethod
+    def _i2c_address(value: Any, field_name: str) -> int:
+        if (
+            not isinstance(value, int)
+            or isinstance(value, bool)
+            or not 0 <= value <= 0x7F
+        ):
+            raise CarUiRuntimeConfigError(
+                f"{field_name} must be an integer between 0x00 and 0x7F"
+            )
+        return value
+
+    @staticmethod
+    def _physical_pin(value: Any, field_name: str) -> int:
+        if (
+            not isinstance(value, int)
+            or isinstance(value, bool)
+            or value <= 0
+        ):
+            raise CarUiRuntimeConfigError(
+                f"{field_name} must be a positive physical pin number"
             )
         return value
 

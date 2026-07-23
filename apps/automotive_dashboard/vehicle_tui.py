@@ -1,3 +1,5 @@
+"""Terminal dashboard for live OBD-II vehicle telemetry."""
+
 from __future__ import annotations
 
 import argparse

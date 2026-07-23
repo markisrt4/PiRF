@@ -15,6 +15,21 @@ remote_display = ":2"
 host = "127.0.0.1"
 port = 4532
 
+[input.rotary_encoders]
+volume_index = 0
+
+[[input.rotary_encoders.devices]]
+driver = "seesaw"
+address = 0x36
+
+[[input.rotary_encoders.devices]]
+driver = "seesaw"
+address = 0x37
+
+[[input.rotary_encoders.devices]]
+driver = "seesaw"
+address = 0x38
+
 [[radios]]
 key = "fm_radio"
 config = "fm_radio.json"
@@ -50,6 +65,106 @@ class CarUiRuntimeConfigTestAppTest(unittest.TestCase):
             ]
         )
         self.assertEqual(0, result)
+
+    def test_rotary_encoder_config_is_parsed(self) -> None:
+        from apps.carUi.config.component_test.car_ui_runtime_config_test_app import (
+            validate_config,
+        )
+
+        config = validate_config(
+            self.config_path,
+            project_root=self.project_root,
+        )
+
+        self.assertEqual(
+            (0x36, 0x37, 0x38),
+            tuple(
+                device.address
+                for device in config.input.rotary_encoders.devices
+            ),
+        )
+        self.assertEqual(
+            0,
+            config.input.rotary_encoders.volume_index,
+        )
+        self.assertEqual(
+            2,
+            config.input.rotary_encoders.panel_count,
+        )
+
+    def test_mixed_seesaw_and_gpio_encoders_are_parsed(self) -> None:
+        from apps.carUi.config.car_ui_runtime_config_parser import (
+            GpioEncoderConfig,
+            SeesawEncoderConfig,
+        )
+        from apps.carUi.config.component_test.car_ui_runtime_config_test_app import (
+            validate_config,
+        )
+
+        mixed_toml = VALID_TOML.replace(
+            '''[[input.rotary_encoders.devices]]
+driver = "seesaw"
+address = 0x38''',
+            '''[[input.rotary_encoders.devices]]
+driver = "gpio"
+pin_a = 11
+pin_b = 13
+button = 15''',
+        )
+        self.config_path.write_text(mixed_toml, encoding="utf-8")
+
+        config = validate_config(
+            self.config_path,
+            project_root=self.project_root,
+        )
+
+        self.assertIsInstance(
+            config.input.rotary_encoders.devices[0],
+            SeesawEncoderConfig,
+        )
+        gpio = config.input.rotary_encoders.devices[2]
+        self.assertIsInstance(gpio, GpioEncoderConfig)
+        self.assertEqual((11, 13, 15), (gpio.pin_a, gpio.pin_b, gpio.button))
+
+    def test_volume_encoder_index_must_identify_a_device(self) -> None:
+        self.config_path.write_text(
+            VALID_TOML.replace(
+                "volume_index = 0",
+                "volume_index = 3",
+            ),
+            encoding="utf-8",
+        )
+
+        result = main(
+            [
+                str(self.config_path),
+                "--project-root",
+                str(self.project_root),
+                "--quiet",
+            ]
+        )
+
+        self.assertEqual(1, result)
+
+    def test_seesaw_encoder_addresses_must_be_unique(self) -> None:
+        self.config_path.write_text(
+            VALID_TOML.replace(
+                "address = 0x38",
+                "address = 0x37",
+            ),
+            encoding="utf-8",
+        )
+
+        result = main(
+            [
+                str(self.config_path),
+                "--project-root",
+                str(self.project_root),
+                "--quiet",
+            ]
+        )
+
+        self.assertEqual(1, result)
 
     def test_invalid_config_returns_one(self) -> None:
         self.config_path.write_text(

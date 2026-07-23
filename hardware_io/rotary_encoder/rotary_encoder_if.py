@@ -52,3 +52,11 @@ class RotaryEncoderIf(ABC):
         """
         Stop monitoring the rotary encoder.
         """
+
+    def poll(self) -> None:
+        """
+        Perform implementation-specific polling work.
+
+        Callback-driven encoders may leave this as a no-op. Implementations
+        that accumulate hardware events can dispatch them here.
+        """

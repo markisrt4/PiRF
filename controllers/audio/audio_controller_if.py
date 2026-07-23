@@ -8,6 +8,11 @@ class AudioControllerIf(ABC):
     Interface for controlling audio output volume.
     """
 
+    @property
+    @abstractmethod
+    def maximum_level(self) -> int:
+        """Return the maximum discrete volume level."""
+
     @abstractmethod
     def volume_up(self) -> int:
         """
@@ -31,6 +36,14 @@ class AudioControllerIf(ABC):
         """
         Set the volume level and return the resulting level.
         """
+
+    @abstractmethod
+    def is_muted(self) -> bool:
+        """Return whether audio output is muted."""
+
+    @abstractmethod
+    def toggle_mute(self) -> bool:
+        """Toggle mute and return the resulting muted state."""
 
     def adjust_volume(self, steps: int) -> int:
         """

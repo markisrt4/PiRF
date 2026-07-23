@@ -11,6 +11,7 @@ class PipewireAudioController(AudioControllerIf):
     """
 
     DEFAULT_SINK = "@DEFAULT_AUDIO_SINK@"
+    MAX_VOLUME = 1.0
 
     def __init__(
         self,
@@ -33,12 +34,18 @@ class PipewireAudioController(AudioControllerIf):
     def steps(self) -> int:
         return self._steps
 
+    @property
+    def maximum_level(self) -> int:
+        return self._steps
+
     def volume_up(self) -> int:
         self._run_wpctl(
             [
                 "set-volume",
                 self.DEFAULT_SINK,
                 f"{self._step_percent}%+",
+                "--limit",
+                str(self.MAX_VOLUME),
             ]
         )
 
@@ -98,6 +105,26 @@ class PipewireAudioController(AudioControllerIf):
         )
 
         return self.get_volume_level()
+
+    def is_muted(self) -> bool:
+        output = self._run_wpctl(
+            [
+                "get-volume",
+                self.DEFAULT_SINK,
+            ],
+            capture=True,
+        )
+        return "[MUTED]" in output.upper()
+
+    def toggle_mute(self) -> bool:
+        self._run_wpctl(
+            [
+                "set-mute",
+                self.DEFAULT_SINK,
+                "toggle",
+            ]
+        )
+        return self.is_muted()
 
     def _clamp_level(self, level: int) -> int:
         return max(0, min(level, self._steps))
