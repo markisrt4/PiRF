@@ -42,7 +42,7 @@ def byte_at(data: bytes, index: int) -> int:
 
     @param data OBD-II payload bytes.
     @param index Zero-based byte index.
-    @raises ValueError if the requested byte is absent.
+    @exception ValueError if the requested byte is absent.
     """
     try:
         return data[index]

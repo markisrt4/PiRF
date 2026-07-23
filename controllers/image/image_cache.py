@@ -86,8 +86,8 @@ class ImageCache:
         @param width Optional positive bounding width in pixels.
         @param height Optional positive bounding height in pixels.
         @return Caller-owned copy of the decoded image.
-        @raises ValueError if the URL or dimensions are invalid.
-        @raises ImageDownloadError if downloading or decoding fails.
+        @exception ValueError if the URL or dimensions are invalid.
+        @exception ImageDownloadError if downloading or decoding fails.
         """
         normalized_url = url.strip()
 

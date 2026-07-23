@@ -43,7 +43,7 @@ def load_leddmx_config(
     @param config_path TOML file or directory containing ``leddmx.toml``.
     @param project_root Base path for relative configuration paths.
     @return Validated Bluetooth configuration.
-    @raises LedDmxConfigError if the file is missing or invalid.
+    @exception LedDmxConfigError if the file is missing or invalid.
     """
     root = (
         Path(project_root).expanduser().resolve()

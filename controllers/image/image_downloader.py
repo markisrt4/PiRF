@@ -62,8 +62,8 @@ class ImageDownloader:
 
         @param url Non-empty HTTP or HTTPS URL.
         @return Final response URL, raw bytes, and reported content type.
-        @raises ValueError if the URL is empty or uses another scheme.
-        @raises ImageDownloadError if the request fails, the response is not
+        @exception ValueError if the URL is empty or uses another scheme.
+        @exception ImageDownloadError if the request fails, the response is not
             an image, or the payload exceeds the configured size limit.
         """
         normalized_url = url.strip()

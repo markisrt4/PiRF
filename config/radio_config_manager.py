@@ -117,8 +117,8 @@ def load_radio_config(path: str | Path) -> RadioConfig:
 
     @param path JSON configuration file to load.
     @return Parsed radio configuration.
-    @raises FileNotFoundError if ``path`` does not exist.
-    @raises ValueError if the file does not contain a JSON object.
+    @exception FileNotFoundError if ``path`` does not exist.
+    @exception ValueError if the file does not contain a JSON object.
     """
     path = Path(path)
     raw = _read_json(path)

@@ -16,8 +16,21 @@ HIDE_UNDOC_CLASSES     = YES
 
 JAVADOC_AUTOBRIEF      = YES
 MULTILINE_CPP_IS_BRIEF = YES
+# Parse Doxygen commands inside Python docstrings instead of rendering the
+# entire docstring as a preformatted literal block.
+PYTHON_DOCSTRING        = NO
 OPTIMIZE_OUTPUT_JAVA   = YES
 MARKDOWN_SUPPORT       = YES
+
+# Graphviz is optional. Keep documentation generation dependency-free; users
+# can enable these settings locally when `dot` is installed.
+HAVE_DOT               = NO
+CALL_GRAPH              = NO
+CALLER_GRAPH            = NO
+DIRECTORY_GRAPH         = NO
+INCLUDE_GRAPH           = NO
+INCLUDED_BY_GRAPH       = NO
+GRAPHICAL_HIERARCHY     = NO
 
 GENERATE_HTML          = YES
 HTML_OUTPUT            = html

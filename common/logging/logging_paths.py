@@ -17,8 +17,8 @@ def logging_tmp_dir(app_name: str) -> Path:
 
     @param app_name Non-empty application name used by the fallback path.
     @return Existing, writable logging directory.
-    @raises ValueError if ``app_name`` is empty.
-    @raises OSError if the directory cannot be created.
+    @exception ValueError if ``app_name`` is empty.
+    @exception OSError if the directory cannot be created.
     """
     if not app_name:
         raise ValueError("app_name cannot be empty")
@@ -55,7 +55,7 @@ def logging_file_path(
     @param app_name Non-empty application name used to select the directory.
     @param name Non-empty log filename.
     @return Path below `logging_tmp_dir(app_name)`; the file is not created.
-    @raises ValueError if ``app_name`` or ``name`` is empty.
+    @exception ValueError if ``app_name`` or ``name`` is empty.
     """
     if not name:
         raise ValueError("name cannot be empty")

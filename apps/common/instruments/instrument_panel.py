@@ -33,7 +33,7 @@ class InstrumentPanel(tk.Frame):
 
         @param name Gauge key supplied at construction.
         @param value New reading, or ``None`` when unavailable.
-        @raises KeyError if ``name`` is not configured.
+        @exception KeyError if ``name`` is not configured.
         """
         gauge = self._gauges.get(name)
 

@@ -76,7 +76,7 @@ class Obd2Manager:
 
         @return Timestamped snapshot; unavailable or unsupported values are
             represented by ``None``.
-        @raises RuntimeError if the adapter is not connected.
+        @exception RuntimeError if the adapter is not connected.
         """
         # Fast-changing values are refreshed on every call.
         rpm = self._read(self._rpm_pid)

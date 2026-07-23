@@ -121,7 +121,7 @@ class EnvironmentalController:
         """Read the sensor and calculate environmental state.
 
         @return Pressure, temperature, altitude, and vertical-speed snapshot.
-        @raises RuntimeError if the controller has not been started.
+        @exception RuntimeError if the controller has not been started.
         """
 
         with self._lock:
@@ -162,7 +162,7 @@ class EnvironmentalController:
         """Set the reference pressure used for absolute altitude.
 
         @param pressure_pa Positive sea-level reference pressure in pascals.
-        @raises ValueError if ``pressure_pa`` is not positive.
+        @exception ValueError if ``pressure_pa`` is not positive.
         """
 
         if pressure_pa <= 0.0:
@@ -185,8 +185,8 @@ class EnvironmentalController:
         @param pressure_pa Current pressure in pascals; when ``None``, read it
             from the configured sensor.
         @return Calculated sea-level pressure reference in pascals.
-        @raises RuntimeError if the controller has not been started.
-        @raises ValueError if the selected pressure is not positive.
+        @exception RuntimeError if the controller has not been started.
+        @exception ValueError if the selected pressure is not positive.
         """
 
         with self._lock:
@@ -244,7 +244,7 @@ class EnvironmentalController:
         @param pressure_pa Measured atmospheric pressure in pascals.
         @param sea_level_pressure_pa Sea-level reference pressure in pascals.
         @return Estimated altitude above mean sea level in meters.
-        @raises ValueError if either pressure is not positive.
+        @exception ValueError if either pressure is not positive.
         """
 
         if pressure_pa <= 0.0:

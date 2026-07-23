@@ -119,7 +119,7 @@ class CarUiRuntimeConfig:
         """Return a radio stack by key.
 
         @param key Stable radio-stack identifier.
-        @raises KeyError if the key is not configured.
+        @exception KeyError if the key is not configured.
         """
         for radio in self.radios:
             if radio.key == key:
@@ -156,7 +156,7 @@ class CarUiRuntimeConfigParser:
         """Load and validate the configured TOML file.
 
         @return Validated Car UI runtime configuration.
-        @raises CarUiRuntimeConfigError if the file is missing or invalid.
+        @exception CarUiRuntimeConfigError if the file is missing or invalid.
         """
         try:
             with self.config_path.open("rb") as file:
